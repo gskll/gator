@@ -1,27 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"os"
 
+	"github.com/gskll/gator/internal/command"
 	"github.com/gskll/gator/internal/config"
+	"github.com/gskll/gator/internal/state"
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		log.Fatal("Usage: cli <command> [args...]")
+	}
+
 	cfg, err := config.Read()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error reading config: %v", err)
 	}
-	fmt.Printf("%+v\n", cfg)
+	state := state.NewState(cfg)
 
-	user := "andrew"
-	err = cfg.SetUser(user)
+	cmds := command.NewCommands()
+	cmds.Register("login", command.HandlerLogin)
+
+	cmd := command.Command{
+		Name: os.Args[1],
+		Args: os.Args[2:],
+	}
+
+	err = cmds.Run(state, cmd)
 	if err != nil {
 		log.Fatal(err)
 	}
-	cfg2, err := config.Read()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%+v\n", cfg2)
 }
