@@ -18,14 +18,15 @@ func Read() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	bytes, err := os.ReadFile(configFilePath)
+
+	file, err := os.Open(configFilePath)
 	if err != nil {
 		return Config{}, err
 	}
+	defer file.Close()
 
 	var cfg Config
-	err = json.Unmarshal(bytes, &cfg)
-	if err != nil {
+	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
 		return Config{}, err
 	}
 
@@ -34,12 +35,7 @@ func Read() (Config, error) {
 
 func (c *Config) SetUser(user string) error {
 	c.CurrentUserName = user
-
-	err := write(c)
-	if err != nil {
-		return err
-	}
-	return nil
+	return write(c)
 }
 
 func write(cfg *Config) error {
@@ -48,12 +44,13 @@ func write(cfg *Config) error {
 		return err
 	}
 
-	bytes, err := json.Marshal(cfg)
+	file, err := os.Create(configFilePath)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(configFilePath, bytes, 0644)
-	return err
+	defer file.Close()
+
+	return json.NewEncoder(file).Encode(cfg)
 }
 
 func getConfigFilePath() (string, error) {
