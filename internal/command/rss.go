@@ -74,7 +74,7 @@ func printCreatedFeed(feed database.Feed) {
 
 func printFeed(feed database.GetFeedsRow) {
 	fmt.Printf("* ID:		%v\n", feed.ID)
-	fmt.Printf("* User:		%v\n", feed.User.Name)
+	fmt.Printf("* User:		%v\n", feed.UserName)
 	fmt.Printf("* Name:		%v\n", feed.Name)
 	fmt.Printf("* URL:		%v\n", feed.Url)
 	fmt.Println()
