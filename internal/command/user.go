@@ -85,6 +85,12 @@ func handlerRegister(s *state.State, cmd Command) error {
 		return fmt.Errorf("Couldn't set current user: %w", err)
 	}
 
-	fmt.Printf("Registered: %+v", user)
+	fmt.Println("User registered:")
+	printUser(user)
 	return nil
+}
+
+func printUser(user database.User) {
+	fmt.Printf("* ID:	  %v\n", user.ID)
+	fmt.Printf("* Name:   %v\n", user.Name)
 }
