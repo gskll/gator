@@ -14,6 +14,34 @@ import (
 
 var url = "https://www.wagslane.dev/index.xml"
 
+func handlerFollow(s *state.State, cmd Command) error {
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("Usage: %s feed_url", cmd.Name)
+	}
+
+	feedUrl := cmd.Args[0]
+	feed, err := s.Db.GetFeed(context.Background(), feedUrl)
+	if err != nil {
+		return fmt.Errorf("Error getting feed: %w", err)
+	}
+	user, err := s.Db.GetUser(context.Background(), s.Cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("Error getting user: %w", err)
+	}
+
+	now := time.Now()
+	follow, err := s.Db.CreateFeedFollow(
+		context.Background(),
+		database.CreateFeedFollowParams{ID: uuid.New(), FeedID: feed.ID, UserID: user.ID, CreatedAt: now, UpdatedAt: now},
+	)
+	if err != nil {
+		return fmt.Errorf("Error creating follow: %w", err)
+	}
+
+	fmt.Printf("User '%s' is following feed '%s'\n", follow.UserName, follow.FeedName)
+	return nil
+}
+
 func handlerAgg(s *state.State, cmd Command) error {
 	feed, err := rss.FetchFeed(context.Background(), url)
 	if err != nil {
