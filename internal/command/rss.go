@@ -23,6 +23,22 @@ func handlerAgg(s *state.State, cmd Command) error {
 	return nil
 }
 
+func handlerFeeds(s *state.State, cmd Command) error {
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Usage: %s", cmd.Name)
+	}
+
+	feeds, err := s.Db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("Error getting feeds: %w", err)
+	}
+
+	for _, feed := range feeds {
+		printFeed(feed)
+	}
+	return nil
+}
+
 func handlerAddFeed(s *state.State, cmd Command) error {
 	if len(cmd.Args) != 2 {
 		return fmt.Errorf("Usage: %s name feed_url", cmd.Name)
@@ -45,13 +61,21 @@ func handlerAddFeed(s *state.State, cmd Command) error {
 		return fmt.Errorf("Error creating feed: %w", err)
 	}
 
-	printFeed(feed)
+	printCreatedFeed(feed)
 	return nil
 }
 
-func printFeed(feed database.Feed) {
+func printCreatedFeed(feed database.Feed) {
 	fmt.Printf("* ID:		%v\n", feed.ID)
 	fmt.Printf("* User ID:	%v\n", feed.UserID)
 	fmt.Printf("* Name:		%v\n", feed.Name)
 	fmt.Printf("* URL:		%v\n", feed.Url)
+}
+
+func printFeed(feed database.GetFeedsRow) {
+	fmt.Printf("* ID:		%v\n", feed.ID)
+	fmt.Printf("* User:		%v\n", feed.User.Name)
+	fmt.Printf("* Name:		%v\n", feed.Name)
+	fmt.Printf("* URL:		%v\n", feed.Url)
+	fmt.Println()
 }

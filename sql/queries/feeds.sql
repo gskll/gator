@@ -9,3 +9,10 @@ VALUES(
     $6
 )
 RETURNING *;
+
+-- name: GetFeeds :many
+SELECT feeds.*, sqlc.embed(users)
+FROM feeds
+INNER JOIN users
+ON feeds.user_id = users.id
+ORDER BY feeds.created_at DESC;
