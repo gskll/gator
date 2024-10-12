@@ -31,8 +31,7 @@ func main() {
 	state := state.NewState(cfg, dbQueries)
 
 	cmds := command.NewCommands()
-	cmds.Register("login", command.HandlerLogin)
-	cmds.Register("register", command.HandlerRegister)
+	cmds.RegisterCommands()
 
 	cmd := command.Command{
 		Name: os.Args[1],

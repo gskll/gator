@@ -11,7 +11,19 @@ import (
 	"github.com/gskll/gator/internal/state"
 )
 
-func HandlerLogin(s *state.State, cmd Command) error {
+func handlerReset(s *state.State, cmd Command) error {
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Usage: %s", cmd.Name)
+	}
+	err := s.Db.ResetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("Error resetting users: %w", err)
+	}
+	fmt.Println("Users reset.")
+	return nil
+}
+
+func handlerLogin(s *state.State, cmd Command) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("Usage: %s <username>", cmd.Name)
 	}
@@ -32,7 +44,7 @@ func HandlerLogin(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerRegister(s *state.State, cmd Command) error {
+func handlerRegister(s *state.State, cmd Command) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("Usage: %s <username>", cmd.Name)
 	}

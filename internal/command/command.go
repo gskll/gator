@@ -23,7 +23,13 @@ func NewCommands() *Commands {
 	}
 }
 
-func (c *Commands) Register(name string, f func(*state.State, Command) error) error {
+func (c *Commands) RegisterCommands() {
+	c.register("login", handlerLogin)
+	c.register("register", handlerRegister)
+	c.register("reset", handlerReset)
+}
+
+func (c *Commands) register(name string, f func(*state.State, Command) error) error {
 	c.registeredCommands[name] = f
 	return nil
 }
