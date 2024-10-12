@@ -11,6 +11,26 @@ import (
 	"github.com/gskll/gator/internal/state"
 )
 
+func handlerUsers(s *state.State, cmd Command) error {
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Usage: %s", cmd.Name)
+	}
+
+	users, err := s.Db.GetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("Error getting users: %w", err)
+	}
+
+	for _, user := range users {
+		name := user.Name
+		if name == s.Cfg.CurrentUserName {
+			name += " (current)"
+		}
+		fmt.Printf("* %s\n", name)
+	}
+	return nil
+}
+
 func handlerReset(s *state.State, cmd Command) error {
 	if len(cmd.Args) > 0 {
 		return fmt.Errorf("Usage: %s", cmd.Name)
