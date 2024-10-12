@@ -29,6 +29,7 @@ func (c *Commands) RegisterCommands() {
 	c.register("reset", handlerReset)
 	c.register("users", handlerUsers)
 	c.register("agg", handlerAgg)
+	c.register("addfeed", handlerAddFeed)
 }
 
 func (c *Commands) register(name string, f func(*state.State, Command) error) error {
