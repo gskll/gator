@@ -14,7 +14,24 @@ import (
 
 var url = "https://www.wagslane.dev/index.xml"
 
-func handlerFollow(s *state.State, cmd Command) error {
+func handlerFollowing(s *state.State, cmd Command, user database.User) error {
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Usage: %s", cmd.Name)
+	}
+
+	following, err := s.Db.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		return fmt.Errorf("Error getting user following: %w", err)
+	}
+
+	for _, feed := range following {
+		fmt.Printf("* %s\n", feed.FeedName)
+	}
+
+	return nil
+}
+
+func handlerFollow(s *state.State, cmd Command, user database.User) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("Usage: %s feed_url", cmd.Name)
 	}
@@ -23,10 +40,6 @@ func handlerFollow(s *state.State, cmd Command) error {
 	feed, err := s.Db.GetFeed(context.Background(), feedUrl)
 	if err != nil {
 		return fmt.Errorf("Error getting feed: %w", err)
-	}
-	user, err := s.Db.GetUser(context.Background(), s.Cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("Error getting user: %w", err)
 	}
 
 	now := time.Now()
@@ -67,26 +80,36 @@ func handlerFeeds(s *state.State, cmd Command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state.State, cmd Command) error {
+func handlerAddFeed(s *state.State, cmd Command, user database.User) error {
 	if len(cmd.Args) != 2 {
 		return fmt.Errorf("Usage: %s name feed_url", cmd.Name)
 	}
 
-	user, err := s.Db.GetUser(context.Background(), s.Cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("Error getting user: %w", err)
-	}
-
-	name := cmd.Args[0]
-	url := cmd.Args[1]
+	feedName := cmd.Args[0]
+	feedUrl := cmd.Args[1]
 	now := time.Now()
 
 	feed, err := s.Db.CreateFeed(
 		context.Background(),
-		database.CreateFeedParams{ID: uuid.New(), UserID: user.ID, Name: name, Url: url, UpdatedAt: now, CreatedAt: now},
+		database.CreateFeedParams{
+			ID:        uuid.New(),
+			UserID:    user.ID,
+			Name:      feedName,
+			Url:       feedUrl,
+			UpdatedAt: now,
+			CreatedAt: now,
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("Error creating feed: %w", err)
+	}
+
+	_, err = s.Db.CreateFeedFollow(
+		context.Background(),
+		database.CreateFeedFollowParams{ID: uuid.New(), UserID: user.ID, FeedID: feed.ID, CreatedAt: now, UpdatedAt: now},
+	)
+	if err != nil {
+		return fmt.Errorf("Error following new feed: %w", err)
 	}
 
 	printCreatedFeed(feed)

@@ -24,15 +24,17 @@ func NewCommands() *Commands {
 }
 
 func (c *Commands) RegisterCommands() {
+	c.register("reset", handlerReset)
+
 	c.register("login", handlerLogin)
 	c.register("register", handlerRegister)
-	c.register("reset", handlerReset)
 	c.register("users", handlerUsers)
 
 	c.register("agg", handlerAgg)
-	c.register("addfeed", handlerAddFeed)
 	c.register("feeds", handlerFeeds)
-	c.register("follow", handlerFollow)
+	c.register("addfeed", middlewareLoggedIn(handlerAddFeed))
+	c.register("follow", middlewareLoggedIn(handlerFollow))
+	c.register("following", middlewareLoggedIn(handlerFollowing))
 }
 
 func (c *Commands) register(name string, f func(*state.State, Command) error) error {
