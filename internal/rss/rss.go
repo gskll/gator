@@ -7,6 +7,8 @@ import (
 	"html"
 	"io"
 	"net/http"
+
+	"github.com/gskll/gator/internal/state"
 )
 
 type RSSFeed struct {
@@ -25,7 +27,7 @@ type RSSItem struct {
 	PubDate     string `xml:"pubDate"`
 }
 
-func FetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
+func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error building request: %w", err)
@@ -55,4 +57,27 @@ func FetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	}
 
 	return &feed, nil
+}
+
+func ScrapeFeeds(ctx context.Context, s *state.State) error {
+	nextFeed, err := s.Db.GetNextFeedToFetch(ctx)
+	if err != nil {
+		return fmt.Errorf("Error getting next feed to fetch: %w", err)
+	}
+
+	err = s.Db.MarkFeedFectched(ctx, nextFeed.ID)
+	if err != nil {
+		return fmt.Errorf("Error marking feed fetched '%s': %w", nextFeed.Name, err)
+	}
+
+	rss, err := fetchFeed(ctx, nextFeed.Url)
+	if err != nil {
+		return fmt.Errorf("Error fetching feed '%s': %w", nextFeed.Name, err)
+	}
+
+	fmt.Printf("Fetched: %s\n", nextFeed.Name)
+	for _, item := range rss.Channel.Item {
+		fmt.Printf("* %s\n", item.Title)
+	}
+	return nil
 }

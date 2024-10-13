@@ -12,7 +12,28 @@ import (
 	"github.com/gskll/gator/internal/state"
 )
 
-var url = "https://www.wagslane.dev/index.xml"
+func handlerAgg(s *state.State, cmd Command) error {
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("Usage: %s time_between_reqs", cmd.Name)
+	}
+
+	timeBetweenReqs, err := time.ParseDuration(cmd.Args[0])
+	if err != nil {
+		return fmt.Errorf("Error parsing time_between_reqs: %w", err)
+	}
+
+	fmt.Printf("Collecting feeds every %s\n", timeBetweenReqs)
+
+	ctx := context.Background()
+	ticker := time.NewTicker(timeBetweenReqs)
+	for ; ; <-ticker.C {
+		err = rss.ScrapeFeeds(ctx, s)
+		if err != nil {
+			return fmt.Errorf("Error scraping feeds: %w", err)
+		}
+		fmt.Println()
+	}
+}
 
 func handlerFollowing(s *state.State, cmd Command, user database.User) error {
 	if len(cmd.Args) > 0 {
@@ -72,15 +93,6 @@ func handlerFollow(s *state.State, cmd Command, user database.User) error {
 	}
 
 	fmt.Printf("User '%s' is following feed '%s'\n", follow.UserName, follow.FeedName)
-	return nil
-}
-
-func handlerAgg(s *state.State, cmd Command) error {
-	feed, err := rss.FetchFeed(context.Background(), url)
-	if err != nil {
-		return fmt.Errorf("Error fetching feed: %w", err)
-	}
-	fmt.Printf("%+v\n", feed)
 	return nil
 }
 
