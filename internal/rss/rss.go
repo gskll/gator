@@ -7,7 +7,11 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"time"
 
+	"github.com/google/uuid"
+
+	"github.com/gskll/gator/internal/database"
 	"github.com/gskll/gator/internal/state"
 )
 
@@ -77,7 +81,28 @@ func ScrapeFeeds(ctx context.Context, s *state.State) error {
 
 	fmt.Printf("Fetched: %s\n", nextFeed.Name)
 	for _, item := range rss.Channel.Item {
+		pubDate, _ := parsePubDate(item.PubDate)
+
+		err = s.Db.CreatePost(
+			ctx,
+			database.CreatePostParams{
+				ID:          uuid.New(),
+				FeedID:      nextFeed.ID,
+				Title:       item.Title,
+				Url:         item.Link,
+				PublishedAt: pubDate,
+				Description: item.Description,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("Error creating post: %w", err)
+		}
 		fmt.Printf("* %s\n", item.Title)
 	}
 	return nil
+}
+
+func parsePubDate(date string) (time.Time, error) {
+	layout := "Mon, 02 Jan 2006 15:04:05 -0700"
+	return time.Parse(layout, date)
 }
