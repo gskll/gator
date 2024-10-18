@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,8 +32,8 @@ type CreatePostParams struct {
 	FeedID      uuid.UUID
 	Title       string
 	Url         string
-	Description string
-	PublishedAt time.Time
+	Description sql.NullString
+	PublishedAt sql.NullTime
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) error {
@@ -48,12 +49,12 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) error {
 }
 
 const getPostsForUser = `-- name: GetPostsForUser :many
-SELECT posts.id, posts.feed_id, posts.created_at, posts.updated_at, posts.title, posts.url, posts.description, posts.published_at
-FROM feed_follows
-INNER JOIN users on feed_follows.user_id = users.id
-INNER JOIN posts on feed_follows.feed_id = posts.feed_id
-WHERE feed_follows.user_id = $1
-ORDER BY posts.published_at DESC NULLS LAST
+SELECT p.id, p.feed_id, p.created_at, p.updated_at, p.title, p.url, p.description, p.published_at, f.name AS feed_name
+FROM posts p
+INNER JOIN feeds f ON p.feed_id = f.id
+INNER JOIN feed_follows ff ON f.id = ff.feed_id
+WHERE ff.user_id = $1
+ORDER BY p.published_at DESC NULLS LAST
 LIMIT $2
 `
 
@@ -62,15 +63,27 @@ type GetPostsForUserParams struct {
 	Limit  int32
 }
 
-func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams) ([]Post, error) {
+type GetPostsForUserRow struct {
+	ID          uuid.UUID
+	FeedID      uuid.UUID
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Title       string
+	Url         string
+	Description sql.NullString
+	PublishedAt sql.NullTime
+	FeedName    string
+}
+
+func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams) ([]GetPostsForUserRow, error) {
 	rows, err := q.db.QueryContext(ctx, getPostsForUser, arg.UserID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Post
+	var items []GetPostsForUserRow
 	for rows.Next() {
-		var i Post
+		var i GetPostsForUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.FeedID,
@@ -80,6 +93,7 @@ func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams
 			&i.Url,
 			&i.Description,
 			&i.PublishedAt,
+			&i.FeedName,
 		); err != nil {
 			return nil, err
 		}

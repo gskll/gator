@@ -36,6 +36,7 @@ func (c *Commands) RegisterCommands() {
 	c.register("follow", middlewareLoggedIn(handlerFollow))
 	c.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 	c.register("following", middlewareLoggedIn(handlerFollowing))
+	c.register("browse", middlewareLoggedIn(handlerBrowse))
 }
 
 func (c *Commands) register(name string, f func(*state.State, Command) error) error {

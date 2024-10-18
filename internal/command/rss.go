@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,39 @@ import (
 	"github.com/gskll/gator/internal/rss"
 	"github.com/gskll/gator/internal/state"
 )
+
+func handlerBrowse(s *state.State, cmd Command, user database.User) error {
+	if len(cmd.Args) > 1 {
+		return fmt.Errorf("Usage: %s [number_of_posts]", cmd.Name)
+	}
+
+	var err error
+	numPosts := 2
+	if len(cmd.Args) == 1 {
+		numPosts, err = strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("number_of_posts must be an int")
+		}
+		if numPosts < 1 {
+			return fmt.Errorf("Usage: %s [number_of_posts]", cmd.Name)
+		}
+	}
+
+	posts, err := s.Db.GetPostsForUser(
+		context.Background(),
+		database.GetPostsForUserParams{UserID: user.ID, Limit: int32(numPosts)},
+	)
+	if err != nil {
+		return fmt.Errorf("Error getting posts: %w", err)
+	}
+
+	for _, post := range posts {
+		printPost(post)
+		fmt.Println()
+	}
+
+	return nil
+}
 
 func handlerAgg(s *state.State, cmd Command) error {
 	if len(cmd.Args) != 1 {
@@ -31,7 +65,6 @@ func handlerAgg(s *state.State, cmd Command) error {
 		if err != nil {
 			return fmt.Errorf("Error scraping feeds: %w", err)
 		}
-		fmt.Println()
 	}
 }
 
@@ -161,4 +194,11 @@ func printFeed(feed database.GetFeedsRow) {
 	fmt.Printf("* Name:		%v\n", feed.Name)
 	fmt.Printf("* URL:		%v\n", feed.Url)
 	fmt.Println()
+}
+
+func printPost(post database.GetPostsForUserRow) {
+	fmt.Printf("* ID:			%v\n", post.ID)
+	fmt.Printf("* Feed:			%v\n", post.FeedName)
+	fmt.Printf("* Title:		%v\n", post.Title)
+	fmt.Printf("* URL:			%v\n", post.Url)
 }
